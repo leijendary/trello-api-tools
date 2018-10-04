@@ -1,0 +1,16 @@
+[API]
+Key = 
+Token = 
+
+[Board]
+Id = 
+
+[Card]
+Fields = name,desc
+
+[List]
+Id = 
+
+[Input]
+FilePath = files/import.xlsx
+WorkbookName = 
