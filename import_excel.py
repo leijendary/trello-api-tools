@@ -34,7 +34,9 @@ LABEL_LIST_URL = 'https://api.trello.com/1/boards/{}/labels?key={}&token={}' \
     .format(BOARD_ID, API_KEY, API_TOKEN)
 
 # backlog ID
-BACKLOG_LIST_ID = list_config.get('Id')
+BACKLOG_LIST_ID = list_config.get('BacklogId')
+# closed ID
+CLOSED_LIST_ID = list_config.get('ClosedId')
 
 # get the cards from the url
 cards = requests.get(CARD_LIST_URL).json()
@@ -68,6 +70,18 @@ def read_rows():
         if status.lower() == 'closed':
             print(ir + ' is closed')
 
+            card = get_card_by_ir(ir);
+
+            if card is not None:
+                if card['idList'] != CLOSED_LIST_ID:
+                    move_card_list(card['id'], CLOSED_LIST_ID)
+
+                    print(ir + ' is moved to closed')
+            else:
+                create_card(row_number, ir, row, CLOSED_LIST_ID)
+                
+                print(ir + ' is created in the closed list')
+
             continue
 
         # check if the IR number is already existing
@@ -77,27 +91,11 @@ def read_rows():
             continue
         
         # create the card in the API
-        card = create_card(row_number, ir, row)
-
-        # add comments if there are any
-        supp_docu = row[5].value
-        clg_notes = row[20].value
-        sp_notes = row[21].value
-
-        if supp_docu:
-            create_comment(card['id'], 'Supporting Documents:\n\n' + supp_docu)
-
-        if clg_notes:
-            create_comment(card['id'],
-                'Investigation Notes - CLG Systems:\n\n' + clg_notes)
-        
-        if sp_notes:
-            create_comment(card['id'], 
-                'Investigation Notes - Service Provider:\n\n' + sp_notes)
+        create_card(row_number, ir, row, BACKLOG_LIST_ID)
 
 
 # create a card based on the ir and row
-def create_card(row_num, ir, row):
+def create_card(row_num, ir, row, list_id):
     # get the column values
     module = row[3].value
     problem_statement = row[4].value
@@ -129,17 +127,43 @@ def create_card(row_num, ir, row):
         'name': title,
         'desc': description,
         'pos': 'bottom',
-        'idList': BACKLOG_LIST_ID,
+        'idList': list_id,
         'idLabels': label_id,
         'key': API_KEY,
         'token': API_TOKEN
     }
 
     # post the card to the API
-    card = requests.post(CARD_URL, params=param)
+    card = requests.post(CARD_URL, params=param).json()
 
-    return card.json()
+    # add comments if there are any
+    supp_docu = row[5].value
+    clg_notes = row[20].value
+    sp_notes = row[21].value
 
+    if supp_docu:
+        create_comment(card['id'], 
+            'Supporting Documents:\n\n' + str(supp_docu))
+
+    if clg_notes:
+        create_comment(card['id'],
+            'Investigation Notes - CLG Systems:\n\n' + str(clg_notes))
+
+    if sp_notes:
+        create_comment(card['id'], 
+            'Investigation Notes - Service Provider:\n\n' + str(sp_notes))
+
+
+
+def move_card_list(card_id, list_id):
+    param = {
+        'idList': list_id,
+        'pos': 'bottom',
+        'key': API_KEY,
+        'token': API_TOKEN
+    }
+
+    requests.put(CARD_URL + '/{}'.format(card_id), params=param)
 
 # create a comment for the card
 def create_comment(card_id, text):
@@ -152,15 +176,20 @@ def create_comment(card_id, text):
     requests.post(COMMENT_URL.format(card_id), comment)
 
 
-# check if the list of cards has the IR number already
-def has_ir_already(ir):
+# get the card by it's IR number
+def get_card_by_ir(ir):
     for card in cards:
         name = card['name']
         
         if name.lower().startswith(ir.lower()):
-            return True
+            return card
     
-    return False
+    return None
+
+
+# check if the list of cards has the IR number already
+def has_ir_already(ir):
+    return get_card_by_ir(ir) is not None
 
 
 if __name__ == '__main__':

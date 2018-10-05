@@ -6,10 +6,11 @@ Token =
 Id = 
 
 [Card]
-Fields = name,desc
+Fields = name,desc,idList
 
 [List]
-Id = 
+BacklogId = 
+ClosedId = 
 
 [Input]
 FilePath = files/import.xlsx
