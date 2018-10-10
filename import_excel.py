@@ -23,7 +23,7 @@ CARD_FIELDS = card_config.get('Fields')
 
 # build the cards url
 CARD_LIST_URL = 'https://api.trello.com/1/boards/{}/cards?' \
-    'fields={}&key={}&token={}'.format(BOARD_ID, CARD_FIELDS, API_KEY, 
+    'fields={}&key={}&token={}'.format(BOARD_ID, CARD_FIELDS, API_KEY,
         API_TOKEN)
 
 CARD_URL = 'https://api.trello.com/1/cards'
@@ -79,17 +79,31 @@ def read_rows():
                     print(ir + ' is moved to closed')
             else:
                 create_card(row_number, ir, row, CLOSED_LIST_ID)
-                
+
                 print(ir + ' is created in the closed list')
 
             continue
+        else if status.lower() == 're-open':
+            print(ir + ' is re-opened')
+
+            card = get_card_by_ir(ir);
+
+            if card is not None:
+                if card['idList'] != BACKLOG_LIST_ID:
+                    move_card_list(card['id'], BACKLOG_LIST_ID)
+
+                    print(ir + ' is moved to the backlog')
+            else:
+                create_card(row_number, ir, row, BACKLOG_LIST_ID)
+
+                print(ir + ' is created in the backlog list')
 
         # check if the IR number is already existing
         if has_ir_already(ir):
             print(ir + ' already exists')
 
             continue
-        
+
         # create the card in the API
         create_card(row_number, ir, row, BACKLOG_LIST_ID)
 
@@ -101,10 +115,10 @@ def create_card(row_num, ir, row, list_id):
     problem_statement = row[4].value
     severity = row[6].value
 
-    # build the title. the format is 
+    # build the title. the format is
     # "{ir number}: {first line of the problem statement}"
     title = '{}: {}'.format(ir, problem_statement.split('\n', 1)[0])
-    
+
     # build the description of the card
     description = '{}\n\n' \
         '==========================================================\n\n' \
@@ -142,7 +156,7 @@ def create_card(row_num, ir, row, list_id):
     sp_notes = row[21].value
 
     if supp_docu:
-        create_comment(card['id'], 
+        create_comment(card['id'],
             'Supporting Documents:\n\n' + str(supp_docu))
 
     if clg_notes:
@@ -150,7 +164,7 @@ def create_card(row_num, ir, row, list_id):
             'Investigation Notes - CLG Systems:\n\n' + str(clg_notes))
 
     if sp_notes:
-        create_comment(card['id'], 
+        create_comment(card['id'],
             'Investigation Notes - Service Provider:\n\n' + str(sp_notes))
 
 
@@ -180,10 +194,10 @@ def create_comment(card_id, text):
 def get_card_by_ir(ir):
     for card in cards:
         name = card['name']
-        
+
         if name.lower().startswith(ir.lower()):
             return card
-    
+
     return None
 
 
