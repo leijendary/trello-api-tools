@@ -83,7 +83,7 @@ def read_rows():
                 print(ir + ' is created in the closed list')
 
             continue
-        else if status.lower() == 're-open':
+        elif status.lower() == 're-open':
             print(ir + ' is re-opened')
 
             card = get_card_by_ir(ir);
@@ -92,7 +92,7 @@ def read_rows():
                 if card['idList'] != BACKLOG_LIST_ID:
                     move_card_list(card['id'], BACKLOG_LIST_ID)
 
-                    print(ir + ' is moved to the backlog')
+                    print(ir + ' is moved to backlog')
             else:
                 create_card(row_number, ir, row, BACKLOG_LIST_ID)
 
