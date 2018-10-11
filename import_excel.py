@@ -57,10 +57,14 @@ MAX_ROWS = ws.max_row
 def read_rows():
     # start at row 5.
     row_number = 4
+    closed_count = 0
+    reopen_count = 0
+    existing_count = 0
+    new_count = 0
 
-    for row in ws.iter_rows(row_offset=4, max_row=MAX_ROWS):
+    for row in ws.iter_rows(row_offset=1, max_row=MAX_ROWS):
         # increment row number for the next issue
-        row_number = row_number + 1
+        row_number += 1
 
         # get the IR number
         ir = row[9].value
@@ -82,6 +86,8 @@ def read_rows():
 
                 print(ir + ' is created in the closed list')
 
+            closed_count += 1
+
             continue
         elif status.lower() == 're-open':
             print(ir + ' is re-opened')
@@ -98,15 +104,27 @@ def read_rows():
 
                 print(ir + ' is created in the backlog list')
 
+            reopen_count += 1
+
         # check if the IR number is already existing
         if has_ir_already(ir):
             print(ir + ' already exists')
+
+            existing_count += 1
 
             continue
 
         # create the card in the API
         create_card(row_number, ir, row, BACKLOG_LIST_ID)
 
+        new_count += 1
+
+    total = closed_count + reopen_count + new_count + existing_count
+
+    print('Closed : {}'.format(closed_count))
+    print('Re-Opened : {}'.format(reopen_count))
+    print('New : {}'.format(new_count))
+    print('Total : {}'.format(total))
 
 # create a card based on the ir and row
 def create_card(row_num, ir, row, list_id):
