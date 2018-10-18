@@ -1,17 +1,22 @@
 [API]
-Key = 
-Token = 
+Key =
+Token =
 
 [Board]
-Id = 
+Id =
 
 [Card]
 Fields = name,desc,idList
 
+[Action]
+Fields = data
+Filter = commentCard
+MemberCreator = false
+
 [List]
-BacklogId = 
-ClosedId = 
+BacklogId =
+ClosedId =
 
 [Input]
 FilePath = files/import.xlsx
-WorkbookName = 
+WorkbookName =
