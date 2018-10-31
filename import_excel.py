@@ -99,6 +99,9 @@ def read_rows():
                 if card['idList'] != CLOSED_LIST_ID:
                     move_card_list(card['id'], CLOSED_LIST_ID)
 
+                    # update the labes of the card
+                    update_labels(card, row)
+
                     # update comments of the card if there are any updates
                     new_comment_count += update_comments(card['id'], row)
 
@@ -120,6 +123,9 @@ def read_rows():
                 if card['idList'] != BACKLOG_LIST_ID:
                     move_card_list(card['id'], BACKLOG_LIST_ID)
 
+                    # update the labes of the card
+                    update_labels(card, row)
+
                     # update comments of the card if there are any updates
                     new_comment_count += update_comments(card['id'], row)
 
@@ -134,6 +140,9 @@ def read_rows():
         # check if the IR number is already existing
         if has_ir_already(ir):
             card = get_card_by_ir(ir);
+
+            # update the labes of the card
+            update_labels(card, row)
 
             # update comments of the card if there are any updates
             new_comment_count += update_comments(card['id'], row)
@@ -165,7 +174,7 @@ def create_card(row_num, ir, row, list_id):
     # get the column values
     module = row[3].value
     problem_statement = row[4].value
-    severity = row[6].value
+    severity = get_severity(row)
 
     # build the title. the format is
     # "{ir number}: {first line of the problem statement}"
@@ -177,16 +186,8 @@ def create_card(row_num, ir, row, list_id):
         '**Module:** {}\n\n' \
         '**Line:** #{}'.format(problem_statement, module, str(row_num))
 
-    # get the label using the severity
-    label_id = ''
-
-    for label in labels:
-        name = label['name']
-
-        if name.lower() == severity.lower():
-            label_id = label['id']
-
-            break
+    # get the label id using the severity
+    label_id = get_label_id(severity)
 
     # create the card object
     param = {
@@ -227,6 +228,31 @@ def move_card_list(card_id, list_id):
     }
 
     requests.put(CARD_URL + '/{}'.format(card_id), params=param)
+
+
+# update the labes of the card
+def update_labels(card, row):
+    card_labels = card['idLabels']
+    severity = get_severity(row)
+    label_id = get_label_id(severity)
+
+    # remove all the card labels that are not equal to the severity
+    for card_label in card_labels:
+        if card_label is not label_id:
+            card_labels.remove(card_label)
+
+    # if the card labels array is empty, get the label id of the card
+    if not card_labels:
+        card_labels.append(label_id)
+
+    # replace the existing idLabels field of the card by the array of label ids
+    param = {
+        'idLabels': ', '.join(card_labels),
+        'key': API_KEY,
+        'token': API_TOKEN
+    }
+
+    requests.put(CARD_URL + '/{}'.format(card['id']), params=param)
 
 
 # update the comments section of the card
@@ -338,6 +364,20 @@ def get_card_by_ir(ir):
 # check if the list of cards has the IR number already
 def has_ir_already(ir):
     return get_card_by_ir(ir) is not None
+
+
+def get_severity(row):
+    return row[6].value
+
+
+def get_label_id(label_name):
+    for label in labels:
+        name = label['name']
+
+        if name.lower() == label_name.lower():
+            return label['id']
+
+    return ''
 
 
 def get_supp_docu(row):
